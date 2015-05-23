@@ -37,7 +37,7 @@ func (memds *MemDatastore) GetCACert() (*x509.Certificate, error) {
 }
 
 func (memds *MemDatastore) Store(cert *x509.Certificate) error {
-	memds.certs = append(memds, cert)
+	memds.certs = append(memds.certs, cert)
 	return nil
 }
 
