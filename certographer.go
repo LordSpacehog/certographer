@@ -22,10 +22,10 @@ import (
 	//"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
-	// "crypto/sha1"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	// "encoding/asn1"
+	"encoding/asn1"
 	// "encoding/pem"
 	// "errors"
 	"math/big"
@@ -37,13 +37,36 @@ type CA struct {
 	datastore   Datastore
 }
 
+type AuthorityKeyIdentifier struct {
+	keyIdentifier             []byte
+	authorityCertIssuer       pkix.Name
+	authorityCertSerialNumber *big.Int
+}
+
 func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitDepth)
 	if err != nil {
 		return nil, err
 	}
 
+	publicKey := privateKey.PublicKey
+
 	template, err := newCertificate()
+	if err != nil {
+		return nil, err
+	}
+
+	publicKeyBytes, err := asn1.Marshal(publicKey)
+
+	subjectKeyID := sha1.Sum(publicKeyBytes)
+
+	authKeyID := AuthorityKeyIdentifier{
+		keyIdentifier:             subjectKeyID[:],
+		authorityCertIssuer:       subject,
+		authorityCertSerialNumber: template.SerialNumber,
+	}
+
+	authorityKeyIdentifier, err := asn1.Marshal(authKeyID)
 	if err != nil {
 		return nil, err
 	}
@@ -52,13 +75,25 @@ func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) 
 	template.BasicConstraintsValid = true
 	template.IsCA = true
 	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	template.SubjectKeyId = subjectKeyID[:]
+	template.AuthorityKeyId = authorityKeyIdentifier
+
+	certBytes, err := x509.CreateCertificate(rand.Reader, template, template, &publicKey, privateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	certificate, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		return nil, err
+	}
 
 	datastore.StoreCAKey(privateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	datastore.StoreCACert(template)
+	datastore.StoreCACert(certificate)
 	if err != nil {
 		return nil, err
 	}
