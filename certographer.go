@@ -19,15 +19,15 @@
 package ca
 
 import (
-	"crypto/ecdsa"
+	//"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	// "crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/asn1"
-	"encoding/pem"
-	"errors"
+	// "encoding/asn1"
+	// "encoding/pem"
+	// "errors"
 	"math/big"
 )
 
@@ -38,29 +38,58 @@ type CA struct {
 }
 
 func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
-	privateKey := rsa.GenerateKey(rand.Reader, bitDepth)
+	privateKey, err := rsa.GenerateKey(rand.Reader, bitDepth)
+	if err != nil {
+		return nil, err
+	}
 
-	template := newCertificate
+	template, err := newCertificate()
+	if err != nil {
+		return nil, err
+	}
+
 	template.Subject = subject
 	template.BasicConstraintsValid = true
 	template.IsCA = true
 	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 
-	ca := New(datastore)
+	datastore.StoreCAKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	datastore.StoreCACert(template)
+	if err != nil {
+		return nil, err
+	}
+
+	ca, err := New(datastore)
+	if err != nil {
+		return nil, err
+	}
 
 	return ca, nil
 }
 
-func New(datastore Datastore) *CA {
+func New(datastore Datastore) (*CA, error) {
+	pk, err := datastore.GetCAKey()
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := datastore.GetCACert()
+	if err != nil {
+		return nil, err
+	}
 
 	return &CA{
-		privateKey:  privateKey,
-		certificate: certificate,
+		privateKey:  pk,
+		certificate: cert,
 		datastore:   datastore,
-	}
+	}, nil
 }
 
-func newCertficate() (*x509.Certificate, error) {
+func newCertificate() (*x509.Certificate, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
@@ -73,6 +102,7 @@ func newCertficate() (*x509.Certificate, error) {
 	return &certificate, nil
 }
 
+/*
 func GenerateCA(keyType string, bitDepth int, expiration int, subject pkix.Name) (interface{}, *x509.Certificate, error) {
 
 	switch keyType {
@@ -91,3 +121,4 @@ func GenerateCA(keyType string, bitDepth int, expiration int, subject pkix.Name)
 
 	return privateKey, certificate, nil
 }
+*/
