@@ -13,6 +13,7 @@ type Datastore interface {
 	GetCACert() (*x509.Certificate, error)
 	FindByFingerprint(fp string) (*x509.Certificate, error)
 	FindBySerialNumber(sn *big.Int) (*x509.Certificate, error)
+	GetAllCerts() ([]*x509.Certificate, error)
 }
 
 type MemDatastore struct {
@@ -56,4 +57,8 @@ func (memds *MemDatastore) FindByFingerprint(fp string) (*x509.Certificate, erro
 
 func (memds *MemDatastore) FindBySerialNumber(sn *big.Int) (*x509.Certificate, error) {
 	return nil, nil
+}
+
+func (memds *MemDatastore) GetAllCerts() ([]*x509.Certificate, error) {
+	return memds.certs, nil
 }
