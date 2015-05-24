@@ -29,6 +29,7 @@ import (
 	// "encoding/pem"
 	// "errors"
 	"math/big"
+	"time"
 )
 
 type CA struct {
@@ -38,9 +39,9 @@ type CA struct {
 }
 
 type AuthorityKeyIdentifier struct {
-	keyIdentifier             []byte
-	authorityCertIssuer       pkix.Name
-	authorityCertSerialNumber *big.Int
+	KeyIdentifier             []byte
+	AuthorityCertIssuer       pkix.Name
+	AuthorityCertSerialNumber *big.Int
 }
 
 func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
@@ -60,23 +61,25 @@ func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) 
 
 	subjectKeyID := sha1.Sum(publicKeyBytes)
 
-	authKeyID := AuthorityKeyIdentifier{
-		keyIdentifier:             subjectKeyID[:],
-		authorityCertIssuer:       subject,
-		authorityCertSerialNumber: template.SerialNumber,
-	}
+	//authKeyID := AuthorityKeyIdentifier{
+	//	KeyIdentifier:             subjectKeyID[:],
+	//	AuthorityCertIssuer:       subject,
+	//	AuthorityCertSerialNumber: template.SerialNumber,
+	//}
 
-	authorityKeyIdentifier, err := asn1.Marshal(authKeyID)
-	if err != nil {
-		return nil, err
-	}
+	//authorityKeyIdentifier, err := asn1.Marshal(authKeyID)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	template.Subject = subject
 	template.BasicConstraintsValid = true
 	template.IsCA = true
-	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	template.SubjectKeyId = subjectKeyID[:]
-	template.AuthorityKeyId = authorityKeyIdentifier
+	//template.AuthorityKeyId = authorityKeyIdentifier
+	template.NotBefore = time.Now().Add(-5 * time.Minute).UTC()
+	template.NotAfter = time.Now().AddDate(10, 0, 0).UTC()
 
 	certBytes, err := x509.CreateCertificate(rand.Reader, template, template, &publicKey, privateKey)
 	if err != nil {
