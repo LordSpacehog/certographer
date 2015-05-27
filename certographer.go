@@ -40,8 +40,8 @@ type CA struct {
 
 type AuthorityKeyIdentifier struct {
 	KeyIdentifier             []byte
-	AuthorityCertIssuer       pkix.Name
-	AuthorityCertSerialNumber *big.Int
+	AuthorityCertIssuer       []byte
+	AuthorityCertSerialNumber []byte
 }
 
 func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
@@ -58,26 +58,38 @@ func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) 
 	}
 
 	publicKeyBytes, err := asn1.Marshal(publicKey)
+	if err != nil {
+		return nil, err
+	}
 
 	subjectKeyID := sha1.Sum(publicKeyBytes)
+	authCrtIssuer, err := asn1.Marshal(subject)
+	if err != nil {
+		return nil, err
+	}
 
-	//authKeyID := AuthorityKeyIdentifier{
-	//	KeyIdentifier:             subjectKeyID[:],
-	//	AuthorityCertIssuer:       subject,
-	//	AuthorityCertSerialNumber: template.SerialNumber,
-	//}
+	authCrtSN, err := asn1.Marshal(template.SerialNumber)
+	if err != nil {
+		return nil, err
+	}
 
-	//authorityKeyIdentifier, err := asn1.Marshal(authKeyID)
-	//if err != nil {
-	//	return nil, err
-	//}
+	authKeyID := AuthorityKeyIdentifier{
+		KeyIdentifier:             subjectKeyID[:],
+		AuthorityCertIssuer:       authCrtIssuer,
+		AuthorityCertSerialNumber: authCrtSN,
+	}
+
+	authorityKeyIdentifier, err := asn1.Marshal(authKeyID)
+	if err != nil {
+		return nil, err
+	}
 
 	template.Subject = subject
 	template.BasicConstraintsValid = true
 	template.IsCA = true
 	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	template.SubjectKeyId = subjectKeyID[:]
-	//template.AuthorityKeyId = authorityKeyIdentifier
+	template.AuthorityKeyId = authorityKeyIdentifier
 	template.NotBefore = time.Now().Add(-5 * time.Minute).UTC()
 	template.NotAfter = time.Now().AddDate(10, 0, 0).UTC()
 

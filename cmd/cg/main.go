@@ -32,7 +32,7 @@ func main() {
 
 	fmt.Printf("%s\n",
 		pem.EncodeToMemory(&pem.Block{
-			Type:  "Certificate",
+			Type:  "CERTIFICATE",
 			Bytes: cert.Raw,
 		}))
 }
