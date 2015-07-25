@@ -1,0 +1,52 @@
+Certographer
+============
+
+image:https://travis-ci.org/LordSpacehog/certographer.svg["Build Status", link="https://travis-ci.org/LordSpacehog/certographer"] image:https://godoc.org/github.com/LordSpacehog/certographer?status.svg["GoDoc", link="https://godoc.org/github.com/LordSpacehog/certographer"]
+
+Certographer is a golang library and a set of userspace tools to allow for easy creation and management of a Certificate Authority. The project goal is to allow easy and secure issuing of certificates that are fully complient with published RFCs.
+
+Goals
+=====
+
+- [*] RSA Certificate Authority Creation
+- [ ] RSA Certificate Issuing
+- [ ] RSA Certificate Revokation
+- [ ] ECDSA Certificate Authority Creation
+- [ ] RSA Certificate Issuing
+- [ ] RSA Certificate Revokation
+- [ ] CSR Certificate Issuing
+- [*] In Memory Datastore (for testing)
+- [ ] File Datastore
+- [ ] Postgres Datastore
+- [ ] boltdb Datastore
+
+Installation
+============
+
+[source,bash]
+----
+go get github.com/lordspacehog/certographer
+----
+
+Usage
+=====
+
+TODO: Write Usage for bundled cli
+
+Contributing
+============
+
+. Fork It!
+. Create your feature branch: `git checkout -b feature/my-feature`
+. Commit your feature branch: `git commit -am "my new feature"`
+. Push to the feature branch: `git push origin feature/my-feature`
+. Create a pull request!
+
+Credits
+=======
+Alex Swehla
+Sean Swehla
+
+License
+=======
+MIT License (See LICENSE in root of repository)
