@@ -15,16 +15,68 @@ import (
 	"time"
 )
 
-type CA struct {
-	privateKey  interface{}
-	certificate *x509.Certificate
-	datastore   Datastore
+// Parameters for Generating new Key,Cert pairs
+type KeypairParams struct {
+	// Desired Key Type (RSA Or ECDSA)
+	KeyType string
+	// Desired private key bit depth
+	KeyLength int
+	// If ECDSA Set Curve
+	KeyCurve string
+	// Subject Name for cert
+	Name pkix.Name
+	// Number Of Days Valid
+	Expiration int
+	// Enabled Cert Features
+	Usage struct {
+		DigitalSignature  bool
+		ContentCommitment bool
+		KeyEncipherment   bool
+		DataEncipherment  bool
+		KeyAgreement      bool
+		CertSign          bool
+		CRLSign           bool
+		EncipherOnly      bool
+		DecipherOnly      bool
+	}
+	ExtUsage struct {
+		Any                        bool
+		ServerAuth                 bool
+		ClientAuth                 bool
+		CodeSigning                bool
+		EmailProtection            bool
+		IPSECEndSystem             bool
+		IPSECTunnel                bool
+		IPSECUser                  bool
+		TimeStamping               bool
+		OCSPSigning                bool
+		MicrosoftServerGatedCrypto bool
+		NetscapeServerGatedCrypto  bool
+	}
 }
 
 type AuthorityKeyIdentifier struct {
 	KeyIdentifier             []byte
 	AuthorityCertIssuer       []byte
 	AuthorityCertSerialNumber []byte
+}
+
+func newKeypair(params KeypairParams) (interface{}, x509.Certificate, error) {
+	switch params.KeyType {
+	case "RSA":
+		key, cert, err := newRSAKeypair(params)
+		return key, cert, err
+	case "ECDSA":
+		key, cert, err := newECDSAKeypair(params)
+		return key, cert, err
+	default:
+		return nil, nil, errors.New("Specified key type not supported")
+	}
+}
+
+func newRSAKeypair(params KeypairParams) (*rsa.PrivateKey, *x509.Certificate, error) {
+	certificate := newCertificate()
+
 }
 
 func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
