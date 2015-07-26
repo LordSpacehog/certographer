@@ -1,7 +1,7 @@
 Certographer
 ============
 
-image:https://travis-ci.org/LordSpacehog/certographer.svg["Build Status", link="https://travis-ci.org/LordSpacehog/certographer"] image:https://godoc.org/github.com/LordSpacehog/certographer?status.svg["GoDoc", link="https://godoc.org/github.com/LordSpacehog/certographer"]
+image:https://travis-ci.org/LordSpacehog/certographer.svg?branch=master["Build Status", link="https://travis-ci.org/LordSpacehog/certographer"] image:https://godoc.org/github.com/LordSpacehog/certographer?status.svg["GoDoc", link="https://godoc.org/github.com/LordSpacehog/certographer"]
 
 Certographer is a golang library and a set of userspace tools to allow for easy creation and management of a Certificate Authority. The project goal is to allow easy and secure issuing of certificates that are fully complient with published RFCs.
 
