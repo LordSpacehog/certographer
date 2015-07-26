@@ -1,4 +1,4 @@
-package certographer
+package ca
 
 type CA struct {
 	privateKey  interface{}
