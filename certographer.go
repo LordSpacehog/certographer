@@ -10,7 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	// "encoding/pem"
-	// "errors"
+	"errors"
 	"math/big"
 	"time"
 )
@@ -24,7 +24,7 @@ type KeypairParams struct {
 	// If ECDSA Set Curve
 	KeyCurve string
 	// Subject Name for cert
-	Name pkix.Name
+	Subject pkix.Name
 	// Number Of Days Valid
 	Expiration int
 	// Enabled Cert Features
@@ -61,55 +61,77 @@ type AuthorityKeyIdentifier struct {
 	AuthorityCertSerialNumber []byte
 }
 
-func newKeypair(params KeypairParams) (interface{}, x509.Certificate, error) {
+func newKeypair(params KeypairParams) (interface{}, *x509.Certificate, error) {
 	switch params.KeyType {
 	case "RSA":
 		key, cert, err := newRSAKeypair(params)
 		return key, cert, err
-	case "ECDSA":
-		key, cert, err := newECDSAKeypair(params)
-		return key, cert, err
+	//case "ECDSA":
+	//	key, cert, err := newECDSAKeypair(params)
+	//	return key, cert, err
 	default:
-		return nil, nil, errors.New("Specified key type not supported")
+		cert, _ := newCertificate()
+		return nil, cert, errors.New("Specified key type not supported")
 	}
 }
 
 func newRSAKeypair(params KeypairParams) (*rsa.PrivateKey, *x509.Certificate, error) {
-	certificate := newCertificate()
-
-}
-
-func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, bitDepth)
+	privateKey, err := rsa.GenerateKey(rand.Reader, params.KeyLength)
 	if err != nil {
-		return nil, err
+		return nil, &x509.Certificate{}, err
 	}
 
 	publicKey := privateKey.PublicKey
 
 	template, err := newCertificate()
 	if err != nil {
-		return nil, err
+		return nil, &x509.Certificate{}, err
 	}
 
 	publicKeyBytes, err := asn1.Marshal(publicKey)
 	if err != nil {
-		return nil, err
+		return nil, template, err
 	}
 
 	subjectKeyID := sha1.Sum(publicKeyBytes)
-	authCrtIssuer, err := asn1.Marshal(subject)
+
+	template.Subject = params.Subject
+	template.SubjectKeyId = subjectKeyID[:]
+	template.NotBefore = time.Now().Add(-5 * time.Minute).UTC()
+	template.NotAfter = time.Now().AddDate(10, 0, 0).UTC()
+
+	return privateKey, template, err
+}
+
+func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) {
+
+	params := KeypairParams{
+		KeyType:    "RSA",
+		KeyLength:  bitDepth,
+		Subject:    subject,
+		Expiration: 3652,
+		Usage: struct {
+			DigitalSignature: true,
+			KeyEncipherment:  true,
+			CertSign:         true,
+			CRLSign:          true,
+		},
+	}
+
+	key, cert, err := newKeypair(params)
+
+	authCrtIssuer, err := asn1.Marshal(cert.Subject)
 	if err != nil {
 		return nil, err
 	}
 
-	authCrtSN, err := asn1.Marshal(template.SerialNumber)
+	authCrtSN, err := asn1.Marshal(cert.SerialNumber)
 	if err != nil {
 		return nil, err
 	}
 
 	authKeyID := AuthorityKeyIdentifier{
-		KeyIdentifier:             subjectKeyID[:],
+		KeyIdentifier:             cert.SubjectKeyId,
 		AuthorityCertIssuer:       authCrtIssuer,
 		AuthorityCertSerialNumber: authCrtSN,
 	}
@@ -119,16 +141,11 @@ func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) 
 		return nil, err
 	}
 
-	template.Subject = subject
-	template.BasicConstraintsValid = true
-	template.IsCA = true
-	template.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
-	template.SubjectKeyId = subjectKeyID[:]
-	template.AuthorityKeyId = authorityKeyIdentifier
-	template.NotBefore = time.Now().Add(-5 * time.Minute).UTC()
-	template.NotAfter = time.Now().AddDate(10, 0, 0).UTC()
+	cert.BasicConstraintsValid = true
+	cert.IsCA = true
+	cert.AuthorityKeyId = authorityKeyIdentifier
 
-	certBytes, err := x509.CreateCertificate(rand.Reader, template, template, &publicKey, privateKey)
+	certBytes, err := x509.CreateCertificate(rand.Reader, cert, cert, &key.PublicKey, key)
 	if err != nil {
 		return nil, err
 	}
