@@ -60,9 +60,9 @@ type KeypairParams struct {
 }
 
 type AuthorityKeyIdentifier struct {
-	KeyIdentifier             []byte `asn1:"optional, tag:0"`
-	AuthorityCertIssuer       []byte `asn1:"optional, ia5, tag:1"`
-	AuthorityCertSerialNumber []byte `asn1:"optional, tag:2"`
+	KeyIdentifier             []byte    `asn1:"optional,tag:0"`
+	AuthorityCertIssuer       pkix.Name `asn1:"optional,tag:1"`
+	AuthorityCertSerialNumber *big.Int  `asn1:"optional,tag:2"`
 }
 
 func newKeypair(params KeypairParams) (interface{}, *x509.Certificate, error) {
@@ -200,20 +200,10 @@ func InitRSA(datastore Datastore, bitDepth int, subject pkix.Name) (*CA, error) 
 		return nil, errors.New("private Key")
 	}
 
-	authCrtIssuer, err := asn1.Marshal(cert.Subject)
-	if err != nil {
-		return nil, err
-	}
-
-	authCrtSN, err := asn1.Marshal(cert.SerialNumber)
-	if err != nil {
-		return nil, err
-	}
-
 	authKeyID := AuthorityKeyIdentifier{
 		KeyIdentifier:             cert.SubjectKeyId,
-		AuthorityCertIssuer:       authCrtIssuer,
-		AuthorityCertSerialNumber: authCrtSN,
+		AuthorityCertIssuer:       cert.Subject,
+		AuthorityCertSerialNumber: cert.SerialNumber,
 	}
 
 	authorityKeyIdentifier, err := asn1.Marshal(authKeyID)
