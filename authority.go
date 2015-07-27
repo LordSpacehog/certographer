@@ -30,5 +30,5 @@ func (ca *CA) issueRSAKeypair(template KeypairParams) (interface{}, *x509.Certif
 		return nil, &x509.Certificate{}, err
 	}
 
-	return nil, &x509.Certificate{}, err
+	return key, cert, err
 }
