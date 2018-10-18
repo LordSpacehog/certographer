@@ -2,7 +2,6 @@
 package main
 
 import (
-	//"flag"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
