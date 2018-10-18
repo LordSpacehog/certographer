@@ -44,9 +44,11 @@ Contributing
 
 Credits
 =======
-Alex Swehla
-Sean Swehla
+
+- Alex Swehla
+- Sean Swehla
 
 License
 =======
+
 MIT License (See LICENSE in root of repository)
